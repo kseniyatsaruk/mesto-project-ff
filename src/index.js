@@ -1,30 +1,17 @@
 import './pages/index.css';
-import initialCards from './scripts/cards.js';
-
-const cardTemplate = document.querySelector('#card-template').content;
-const cardElement = cardTemplate.querySelector('.card');
-const placesList = document.querySelector('.places__list');
-
-function createCard(cardData, onClickDelete) {
-  const card = cardElement.cloneNode(true);
-  const image = card.querySelector('.card__image');
-  const title = card.querySelector('.card__title');
-
-  image.src = cardData.link;
-  image.alt = cardData.name;
-  title.textContent = cardData.name;
-
-  const deleteButton = card.querySelector('.card__delete-button');
-  deleteButton.addEventListener('click', () => onClickDelete(card));
-
-  return card;
-}
-
-function deleteCard(card) {
-  card.remove();
-}
+import { initialCards } from './components/cards.js';
+import { placesList, handleLike, deleteCard, createCard } from './components/card.js';
+import { setupPopaps } from './components/modal.js';
 
 initialCards.forEach((item) => {
-  const card = createCard(item, deleteCard);
+  const card = createCard(item, deleteCard, handleLike);
   placesList.appendChild(card);
 });
+
+const editButtons = document.querySelectorAll('.profile__edit-button');
+const addButtons = document.querySelectorAll('.profile__add-button');
+const imageElements = document.querySelectorAll('.card__image');
+
+setupPopaps(editButtons, '#popup-edit');
+setupPopaps(addButtons, '#popup-new-card');
+setupPopaps(imageElements, '#popup-image');
