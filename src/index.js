@@ -2,17 +2,24 @@ import './pages/index.css';
 import { initialCards } from './components/cards.js';
 import { handleLike, deleteCard, createCard } from './components/card.js';
 import { openPopup, closePopup } from './components/modal.js';
+import { enableValidation, clearValidation } from './validation.js';
+import { getInitialCards, getUserInfo, updateUserInfo, addNewCard, updateUserAvatar } from './api.js';
 
 const placesList = document.querySelector('.places__list');
+const validationConfig = {
+  formSelector: '.popup__form',
+  inputSelector: '.popup__input',
+  submitButtonSelector: '.popup__button',
+  inactiveButtonClass: 'popup__button_disabled',
+  inputErrorClass: 'popup__input_type_error',
+  errorClass: 'popup__error_visible'
+};
 
-initialCards.forEach((item) => {
-  const card = createCard(item, deleteCard, handleLike, handleImageClick);
-  placesList.appendChild(card);
-});
+enableValidation(validationConfig);
 
-const editButtons = document.querySelector('.profile__edit-button');
-const addButtons = document.querySelector('.profile__add-button');
-const imageElements = document.querySelector('.card__image');
+const editButton = document.querySelector('.profile__edit-button');
+const addButton = document.querySelector('.profile__add-button');
+const editAvatarButton = document.querySelector('.profile__edit-avatar');
 
 const popupWindows = document.querySelectorAll('.popup');
 
@@ -22,11 +29,55 @@ const nameInput = formElement.querySelector('.popup__input_type_name');
 const jobInput = formElement.querySelector('.popup__input_type_description');
 const profileName = document.querySelector('.profile__title');
 const profileDescription = document.querySelector('.profile__description');
+const profileImage = document.querySelector('.profile__image');
+
+const editAvatar = document.querySelector('#popup-edit-avatar');
+const editAvatarForm = editAvatar.querySelector('.popup__form');
+const urlAvatarInput = editAvatarForm.querySelector('.popup__input_type_avatar-url');
 
 const addModal = document.querySelector('#popup-new-card');
 const addForm = addModal.querySelector('.popup__form'); 
 const titleInput = addForm.querySelector('.popup__input_type_card-name');
 const urlInput = addForm.querySelector('.popup__input_type_url');
+
+Promise.all([getUserInfo(), getInitialCards()])
+  .then(([user, cards]) => {
+    const userId = user._id;
+
+    profileName.textContent = user.name;
+    profileDescription.textContent = user.about;
+    profileImage.style.backgroundImage = `url(${user.avatar})`;
+
+    renderCards(cards, userId);
+  })
+  .catch(err => {
+    console.error(err);
+  });
+
+function renderCards(cards, userId) {
+  placesList.innerHTML = '';
+
+  cards.forEach((item) => {
+    const card = createCard(item, deleteCard, handleLike, handleImageClick, userId);
+    placesList.appendChild(card);
+  });
+}
+
+function handleEditProfileOpen() {
+  clearValidation(formElement, validationConfig);
+}
+
+function handleAddPlaceOpen() {
+  clearValidation(addForm, validationConfig);
+}
+
+function handleEditAvatarOpen() {
+  clearValidation(editAvatarForm, validationConfig);
+}
+
+editButton.addEventListener('click', handleEditProfileOpen);
+addButton.addEventListener('click', handleAddPlaceOpen);
+editAvatarButton.addEventListener('click', handleEditAvatarOpen);
 
 function handleImageClick(event) {
   const popup = document.querySelector('#popup-image'); 
@@ -41,15 +92,26 @@ function handleImageClick(event) {
 }
 
 function handleEditFormSubmit(event) {
-  event.preventDefault(); 
+  event.preventDefault();
+  const submitButton = event.target.querySelector('.popup__button');
 
-  const newName = nameInput.value;
-  const newDescription = jobInput.value;
+  submitButton.textContent = 'Сохранение...';
+  submitButton.disabled = true;
 
-  profileName.textContent = newName;
-  profileDescription.textContent = newDescription;
+  updateUserInfo(nameInput.value, jobInput.value)
+    .then(user => {
+      profileName.textContent = user.name;
+      profileDescription.textContent = user.about;
 
-  closePopup(editPopup);
+      closePopup(editPopup);
+    })
+    .catch(err => {
+      console.log(err);
+    })
+    .finally(() => {
+      submitButton.textContent = 'Сохранить';
+      submitButton.disabled = false;
+    });
 }
 
 function addCard(cardElement) {
@@ -58,16 +120,54 @@ function addCard(cardElement) {
 
 function handleAddFormSubmit(event) {
   event.preventDefault();
+  const submitButton = event.target.querySelector('.popup__button');
 
-  const newCard = createCard({ name: titleInput.value, link: urlInput.value }, deleteCard, handleLike, handleImageClick);
-  addCard(newCard);
+  submitButton.textContent = 'Сохранение...';
+  submitButton.disabled = true;
 
-  closePopup(addModal);
-  addForm.reset();
+  addNewCard(titleInput.value, urlInput.value)
+  .then(card => {
+    const newCard = createCard(card, deleteCard, handleLike, handleImageClick, card.owner._id);
+    addCard(newCard);
+     
+    closePopup(addModal);
+    addForm.reset();
+  })
+  .catch(err => {
+    console.log(err);
+  })
+  .finally(() => {
+    submitButton.textContent = 'Сохранить';
+    submitButton.disabled = false;
+  });
+}
+
+function handleEditAvatarSubmit(event) {
+  console.log('Форма отправлена!');
+  event.preventDefault();
+  const submitButton = event.target.querySelector('.popup__button');
+
+  submitButton.textContent = 'Сохранение...';
+  submitButton.disabled = true;
+
+  updateUserAvatar(urlAvatarInput.value)
+    .then(user => {
+      profileImage.style.backgroundImage = `url(${user.avatar})`;
+
+      closePopup(editAvatar);
+    })
+    .catch(err => {
+      console.log(err);
+    })
+    .finally(() => {
+      submitButton.textContent = 'Сохранить';
+      submitButton.disabled = false;
+    });
 }
 
 formElement.addEventListener('submit', handleEditFormSubmit);
 addForm.addEventListener('submit', handleAddFormSubmit);
+editAvatarForm.addEventListener('submit', handleEditAvatarSubmit);
 
 function setupPopaps(triggers, selector) { 
   [triggers].forEach(trigger => {
@@ -88,6 +188,6 @@ popupWindows.forEach(popup => {
 });
 
 
-setupPopaps(editButtons, '#popup-edit');
-setupPopaps(addButtons, '#popup-new-card');
-setupPopaps(imageElements, '#popup-image');
+setupPopaps(editButton, '#popup-edit');
+setupPopaps(addButton, '#popup-new-card');
+setupPopaps(editAvatarButton, '#popup-edit-avatar');

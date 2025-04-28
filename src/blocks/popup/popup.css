@@ -1,5 +1,7 @@
 @import url('./__content/popup__content.css');
 @import url('./__content/_content/popup__content_content_image.css');
+@import url('./__content/_content/popup__content_edit_avatar.css');
+@import url('./__content/_content/popup__content_card_delete.css');
 @import url('./__close/popup__close.css');
 @import url('./__title/popup__title.css');
 @import url('./__form/popup__form.css');
@@ -20,4 +22,18 @@
   bottom: 0;
   right: 0;
   z-index: 10;
+}
+
+.popup__error {
+  color: #FF0000;
+  font-size: 12px;
+  line-height: 15px;
+  margin-top: 5px;
+  min-height: 15px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.popup__error_visible {
+  opacity: 1;
 }
