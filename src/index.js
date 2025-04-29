@@ -144,7 +144,6 @@ function handleAddFormSubmit(event) {
 }
 
 function handleEditAvatarSubmit(event) {
-  console.log('Форма отправлена!');
   event.preventDefault();
   const submitButton = event.target.querySelector('.popup__button');
 
