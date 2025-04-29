@@ -1,9 +1,8 @@
 import './pages/index.css';
-import { initialCards } from './components/cards.js';
-import { handleLike, deleteCard, createCard } from './components/card.js';
+import { handleLike, createCard } from './components/card.js';
 import { openPopup, closePopup } from './components/modal.js';
 import { enableValidation, clearValidation } from './validation.js';
-import { getInitialCards, getUserInfo, updateUserInfo, addNewCard, updateUserAvatar } from './api.js';
+import { getInitialCards, getUserInfo, updateUserInfo, addNewCard, updateUserAvatar, removeCard } from './api.js';
 
 const placesList = document.querySelector('.places__list');
 const validationConfig = {
@@ -39,6 +38,8 @@ const addModal = document.querySelector('#popup-new-card');
 const addForm = addModal.querySelector('.popup__form'); 
 const titleInput = addForm.querySelector('.popup__input_type_card-name');
 const urlInput = addForm.querySelector('.popup__input_type_url');
+
+const submitDeleteButton = document.querySelector('.popup__button_delete');
 
 Promise.all([getUserInfo(), getInitialCards()])
   .then(([user, cards]) => {
@@ -186,6 +187,36 @@ popupWindows.forEach(popup => {
   const closeButton = popup.querySelector('.popup__close');
   closeButton.addEventListener('click', () => closePopup(popup));
 });
+
+let cardIdToDelete = null;
+let cardToDelete = null;
+const cardDelete = document.querySelector('.popup_type_card-delete');
+
+function deleteCard(cardId, card) {
+  cardIdToDelete = cardId;
+  cardToDelete = card;
+
+  openPopup(cardDelete);
+}
+
+function handleDeleteCardSubmit(event) {
+  event.preventDefault();
+
+  removeCard(cardIdToDelete)
+  .then(() => {
+    cardToDelete.remove();
+    closePopup(cardDelete);
+  })
+  .catch(err => {
+    console.log(err);
+  })
+  .finally(() => {
+    cardIdToDelete = null;
+    cardToDelete = null;
+  });
+}
+
+submitDeleteButton.addEventListener('click', handleDeleteCardSubmit);
 
 
 setupPopaps(editButton, '#popup-edit');
